@@ -2,83 +2,110 @@ package com.example.zooapp;
 
 import androidx.appcompat.app.AppCompatActivity;
 
+import android.content.Intent;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteStatement;
 import android.os.Bundle;
+import android.view.View;
 import android.widget.ArrayAdapter;
-import android.widget.Button;
 import android.widget.ListView;
+
+import com.google.android.material.floatingactionbutton.FloatingActionButton;
 
 import java.util.ArrayList;
 
 public class MainActivity extends AppCompatActivity {
-    SQLiteDatabase bancoDados;
     ListView listView;
-    Button btnAdd;
-    
+    FloatingActionButton btnAdd;
+    private SQLiteDatabase bancoDados;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        listView = (ListView) findViewById(R.id.listAnimal);
-        btnAdd = (Button) findViewById(R.id.btnAdd);
-        
+        listView = (ListView) findViewById(R.id.listView);
+        btnAdd = (FloatingActionButton) findViewById(R.id.btnAdd);
+
         criarBancoDados();
-        inserirDadosTemp();
-        
+        // inserirDadosTemp();
+        listarDados();
+
+        btnAdd.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                abrirTelaCadastro();
+            }
+        });
     }
 
-
-    private void openConnection() {
-        this.bancoDados = openOrCreateDatabase("zoo", MODE_PRIVATE, null);
+    @Override
+    protected void onResume(){
+        super.onResume();
+        listarDados();
     }
 
-    public void criarBancoDados() {
+    public void criarBancoDados(){
         try {
-            openConnection();
-            bancoDados.execSQL("CREATE TABLE IF NOT EXISTS animal (" + " id INTEGER PRIMARY KEY AUTOINCREMENT" + ", especie VARCHAR, cela VARCHAR)");
+            bancoDados = openOrCreateDatabase("zoo", MODE_PRIVATE, null);
+            bancoDados.execSQL("CREATE TABLE IF NOT EXISTS animal(" +
+                    " id INTEGER PRIMARY KEY AUTOINCREMENT" +
+                    " , nome VARCHAR)");
+            //bancoDados.execSQL("DELETE FROM animal");
             bancoDados.close();
         } catch (Exception e) {
             e.printStackTrace();
         }
-    };
-    public void inserirDadosTemp() {
+    }
+
+    public void listarDados(){
         try {
-            openConnection();
-            String sql = "INSERT INTO animal (especie,cela) VALUES (?,?)";
+
+            bancoDados = openOrCreateDatabase("zoo", MODE_PRIVATE, null);
+            Cursor meuCursor = bancoDados.rawQuery("SELECT id, nome FROM animal", null);
+            ArrayList<String> linhas = new ArrayList<String>();
+            ArrayAdapter meuAdapter = new ArrayAdapter<String>(
+                    this,
+                    android.R.layout.simple_list_item_1,
+                    android.R.id.text1,
+                    linhas
+            );
+            listView.setAdapter(meuAdapter);
+
+            meuCursor.moveToFirst();
+            do {
+                linhas.add(meuCursor.getString(0) + " - " + meuCursor.getString(1));
+            } while(meuCursor.moveToNext());
+
+        }catch (Exception e){
+            e.printStackTrace();
+        }
+    }
+
+    public void inserirDadosTemp(){
+        try{
+            bancoDados = openOrCreateDatabase("zoo", MODE_PRIVATE, null);
+            String sql = "INSERT INTO animal (nome) VALUES (?)";
             SQLiteStatement stmt = bancoDados.compileStatement(sql);
 
-            stmt.bindString(1, "Ema");
-            stmt.bindString(2, "Cela 1");
+            stmt.bindString(1,"Ema");
             stmt.executeInsert();
 
-            stmt.bindString(1, "Jumento");
-            stmt.bindString(2, "Cela 2");
+            stmt.bindString(1,"Zebra");
             stmt.executeInsert();
 
-            stmt.bindString(1, "Cavalo");
-            stmt.bindString(2, "Cela 3");
+            stmt.bindString(1,"Gorila");
             stmt.executeInsert();
 
             bancoDados.close();
-        } catch (Exception e) {
+        }catch (Exception e){
             e.printStackTrace();
         }
-    };
-
-    public void listarDados() {
-        openConnection();
-        Cursor meuCursos = bancoDados.rawQuery("SELECT id, especie, cela FROM animal", null);
-        ArrayList<String> linhas = new ArrayList<String>();
-        ArrayAdapter meuAdapter = new ArrayAdapter<String>(
-                this,
-                android.R.layout.simple_list_item_1,
-                android.R.id.text1,
-                linhas
-        );
-        listView.setAdapter(meuAdapter);
     }
 
+    public void abrirTelaCadastro(){
+        Intent intent = new Intent(this,AddActivity.class);
+        startActivity(intent);
+    }
 }
